@@ -268,7 +268,7 @@ class MemoryHook(HookProvider):
             logger.error("Failed to save support interaction: %s", exc)
     #def save_support_interaction(self, event: AfterInvocationEvent):
         """Save the completed turn to memory after the agent responds."""
-        # TODO: Implement memory saving
+        # done: Implement memory saving
         # Steps:
         #   1. Get messages from event.agent.messages
         #   2. Walk backwards to find the last user query (plain text)
@@ -278,10 +278,18 @@ class MemoryHook(HookProvider):
 
     def register_hooks(self, registry: HookRegistry) -> None:  # type: ignore
         """Register both memory callbacks."""
-        # TODO: Register retrieve_customer_context on MessageAddedEvent
-        # TODO: Register save_support_interaction on AfterInvocationEvent
+        # done: Register retrieve_customer_context on MessageAddedEvent
+        # done: Register save_support_interaction on AfterInvocationEvent
         pass
+         registry.add_callback(
+            MessageAddedEvent,
+            self.retrieve_customer_context,
+        )
 
+        registry.add_callback(
+            AfterInvocationEvent,
+            self.save_support_interaction,
+        )
 
 # ── TODO 6 — Knowledge Base Tool ─────────────────────────────────────────────
 # Implement search_knowledge_base(query) using the @tool decorator.
