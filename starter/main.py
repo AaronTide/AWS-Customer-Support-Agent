@@ -148,12 +148,70 @@ class MemoryHook(HookProvider):
         memory_client: MemoryClient,
         memory_id: str,
     ):
-        # TODO: Store actor_id, session_id, memory_id, memory_client as attributes
-        # TODO: Call get_namespaces() and store the result as self.namespaces
-        pass
+        self.actor_id = actor_id
+        self.session_id = session_id
+        self.memory_client = memory_client
+        self.memory_id = memory_id
+
+        self.namespaces = get_namespaces(self.memory_client, self.memory_id)
+
+        logger.info("Namespaces loaded: %s", self.namespaces)
+
+        # done: Store actor_id, session_id, memory_id, memory_client as attributes
+        # done: Call get_namespaces() and store the result as self.namespaces
+ 
 
     def retrieve_customer_context(self, event: MessageAddedEvent):
         """Retrieve relevant memories and prepend them to the user message."""
+
+        messages = event.agent.messages
+
+        if (
+            not messages
+            or messages[-1]["role"] != "user"
+            or "toolResult" in messages[-1]["content"][0]
+        ):
+            return
+
+        user_query = messages[-1]["content"][0]["text"]
+      
+        try:
+            all_context = []
+
+            for strategy_type, namespace in self.namespaces.items():
+                resolved_namespace = namespace.format(actorId=self.actor_id)
+
+                memories = self.memory_client.retrieve_memories(
+                    memory_id=self.memory_id,
+                    namespace=resolved_namespace,
+                    query=user_query,
+                    top_k=5,
+                )
+                for memory in memories:
+                    if isinstance(memory, dict):
+                        text = memory.get("content", {}).get("text", "").strip()
+
+                        if text:
+                            all_context.append(f"[{strategy_type}] {text}")
+              if all_context:
+                context_block = "\n".join(all_context)
+                original_text = messages[-1]["content"][0]["text"]
+
+                messages[-1]["content"][0]["text"] = (
+                    f"Customer Context:\n"
+                    f"{context_block}\n\n"
+                    f"{original_text}"
+                )
+                logger.info(
+                    "Retrieved %d memory items for actor %s",
+                    len(all_context),
+                    self.actor_id,
+                )
+
+        except Exception as exc:
+            logger.error("Failed to retrieve customer context: %s", exc)
+
+
         # TODO: Implement memory retrieval
         # Steps:
         #   1. Get the last message from event.agent.messages
@@ -162,9 +220,53 @@ class MemoryHook(HookProvider):
         #   4. For each namespace in self.namespaces, call retrieve_memories()
         #   5. Collect non-empty memory texts with strategy type tags
         #   6. If any found, prepend them to the user message
-        pass
+      
 
-    def save_support_interaction(self, event: AfterInvocationEvent):
+     def save_support_interaction(self, event: AfterInvocationEvent):
+        """Save the completed turn to memory after the agent responds."""
+
+        try:
+            messages = event.agent.messages
+            user_text = agent_text = None
+
+            for msg in reversed(messages):
+                if msg["role"] == "assistant" and not agent_text:
+                    content = msg["content"]
+
+                    if isinstance(content, list):
+                        agent_text = content[0].get("text", "")
+                    else:
+                        agent_text = str(content)
+
+                elif (
+                    msg["role"] == "user"
+                    and not user_text
+                    and "toolResult" not in msg["content"][0]
+                ):
+                    user_text = msg["content"][0]["text"]
+
+                if user_text and agent_text:
+                    break
+
+            if user_text and agent_text:
+                self.memory_client.create_event(
+                    memory_id=self.memory_id,
+                    actor_id=self.actor_id,
+                    session_id=self.session_id,
+                    messages=[
+                        (user_text, "USER"),
+                        (agent_text, "ASSISTANT"),
+                    ],
+                )
+
+                logger.info(
+                    "Saved interaction to memory for actor %s",
+                    self.actor_id,
+                )
+
+        except Exception as exc:
+            logger.error("Failed to save support interaction: %s", exc)
+    #def save_support_interaction(self, event: AfterInvocationEvent):
         """Save the completed turn to memory after the agent responds."""
         # TODO: Implement memory saving
         # Steps:
@@ -172,7 +274,7 @@ class MemoryHook(HookProvider):
         #   2. Walk backwards to find the last user query (plain text)
         #      and the last assistant response
         #   3. Call memory_client.create_event() with both messages
-        pass
+      #  pass
 
     def register_hooks(self, registry: HookRegistry) -> None:  # type: ignore
         """Register both memory callbacks."""
