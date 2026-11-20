@@ -39,6 +39,8 @@ from strands_tools.browser import AgentCoreBrowser
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("CSAI_Agent")
+logger.setLevel(logging.WARNING)  
+
 
 # ── DONE- 1 — App Initialisation ───────────────────────────────────────────────
 # Create a BedrockAgentCoreApp instance.
@@ -187,7 +189,7 @@ class MemoryHook(HookProvider):
         #   4. For each namespace in self.namespaces, call retrieve_memories()
         #   5. Collect non-empty memory texts with strategy type tags
         #   6. If any found, prepend them to the user message
-
+        
         
 
         messages = event.agent.messages
@@ -342,7 +344,7 @@ def search_knowledge_base(query: str) -> str:
         Relevant information retrieved from the knowledge base
     """
     # TODO: Implement the Knowledge Base search
-    if KB_ID is None:
+    if not KB_ID:
         return "Knowledge base not configured."
 
     resp = _bedrock_runtime.retrieve(
@@ -351,7 +353,7 @@ def search_knowledge_base(query: str) -> str:
     )
     results = resp.get("retrievalResults", [])
     if not results:
-        return f"No information found for: {query}"
+        return f"No relevant information found for: {query}"
 
     chunks = [r["content"]["text"] for r in results]
     return "\n---\n".join(chunks)
@@ -513,7 +515,7 @@ async def invoke(payload, context=None):
       session_id  (str, optional) — session identifier; generated if absent
     """
     # TODO: Implement the agent invocation
-    pass
+    
 
 
 # ── CLI entry point (do not modify) ──────────────────────────────────────────
