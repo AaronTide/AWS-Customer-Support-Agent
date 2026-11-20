@@ -329,6 +329,9 @@ class MemoryHook(HookProvider):
 #
 # The docstring is the tool description — the model uses it to decide when
 # to call this tool, so keep it clear and accurate.
+ 
+
+
 
 @tool
 def search_knowledge_base(query: str) -> str:
@@ -504,6 +507,16 @@ print(json.dumps(result))
 #   7. Return the text from the first content block of the response
 #   8. Handle exceptions gracefully
 
+SYSTEM_PROMPT = """You are WanderBot, the AI travel assistant for Horizon Travel.
+
+You have access to tools via the AgentCore Gateway:
+- get_booking(booking_ref)          : Retrieve a booking by reference (e.g. BK-1001)
+- list_bookings_by_email(email)     : List all bookings for a customer email
+
+Use these tools to help customers with their bookings.
+Present results clearly and ask clarifying questions when needed."""
+
+
 @app.entrypoint
 async def invoke(payload, context=None):
     """
@@ -515,6 +528,64 @@ async def invoke(payload, context=None):
       session_id  (str, optional) — session identifier; generated if absent
     """
     # TODO: Implement the agent invocation
+    try:
+        user_input = payload.get("prompt")
+        actor_id = payload.get("customer_id", "anonymous")
+        session_id = payload.get("session_id", str(uuid.uuid4()))  
+
+        hook = MemoryHook(actor_id, session_id, memory_client, MEMORY_ID)
+        browser = AgentCoreBrowser(region=REGION) 
+        
+        tools = [search_knowledge_base, calculate_loyalty_discount, browser.browser]  
+        
+        logger.warning("User input: %s", user_input)  
+        
+        client = MCPClient(lambda: streamable_http_client(url=GATEWAY_URL))  
+        with client:  
+            try:
+                gateway_tools = client.list_tools_sync()  
+                                               
+                tools.extend(gateway_tools)  
+                
+                logger.warning("Gateway connected. Loaded %d gatewway tools.", len(gateway_tools))  
+                
+                for tool in gateway_tools:
+                    logger.warning(f"TOOL Name: {tool.tool_name}")  
+                    
+                    if hasattr(tool, 'tool_spec'):
+                        logger.warning(f"tool_spec: {tool.tool_spec}")  
+
+            except TimeoutError:
+                logger.exception("Gateway tool loading timed out")
+
+            except ConnectionError:
+                logger.exception("Gateway connection failed")
+
+            except Exception as exc:
+                logger.exception(
+                    "Gateway tool loading failed: %s", exc
+                )
+
+            agent = Agent(
+                model=model,
+                tools=tools,
+                hooks=[hook],
+                system_prompt=SYSTEM_PROMPT  
+            )  
+
+            response = agent(user_input)  
+            
+            logger.warning(f"TOOL Payload: {response}")  
+                
+            return response       
+
+    except Exception as e:  
+        
+        logger.warning(f"CAUGHT KEY ERROR: {e}")  
+    
+        logger.warning("".join(traceback.format_exception(type(e), e, e.__traceback__)))   
+    
+        return "An error occurred while processing your request."  
     
 
 
