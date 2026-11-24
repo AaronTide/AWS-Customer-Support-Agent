@@ -20,12 +20,12 @@ Expected: free same-day shipping, 15% discount, priority support (retrieved from
 
 Test 4 — Long-Term Memory (two sessions)
 
-# Session A — introduce yourself
+ Session A — introduce yourself
 agentcore invoke '{"prompt": "Hi, I am Jane. I prefer concise responses.", "customer_id": "CUST-123", "session_id": "s-A"}'
 
-# Wait at least 30 seconds for memory extraction
+Wait at least 30 seconds for memory extraction
 
-# Session B — verify recall (new session, same customer)
+ Session B — verify recall (new session, same customer)
 agentcore invoke '{"prompt": "Do you remember my name and communication preference?", "customer_id": "CUST-123", "session_id": "s-B"}'
 Expected: agent recalls "Jane" and the preference for concise responses.
 
