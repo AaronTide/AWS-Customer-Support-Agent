@@ -3,6 +3,10 @@
 **Udacity — AWS AI Engineering Nanodegree**
 
 ---
+## About my submission
+
+My written reflection, screenshots and finished main.py file are all in the starter folder. 
+
 
 ## Overview
 
