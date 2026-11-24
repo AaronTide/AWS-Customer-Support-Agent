@@ -552,12 +552,7 @@ async def invoke(payload, context=None):
                 
                 logger.warning("Gateway connected sucessfully. Loaded %d tools from gatway.", len(gateway_tools))  
                 
-                for tool in gateway_tools:
-                    logger.warning(f"tool name: {tool.tool_name}")  
-                    
-                    if hasattr(tool, 'tool_spec'):
-                        logger.warning(f"tool_spec: {tool.tool_spec}")  
-
+          
             except TimeoutError:
                 logger.exception("Error, gateway tools timed out")
 
