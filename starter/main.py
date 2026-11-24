@@ -69,7 +69,7 @@ os.environ["BYPASS_TOOL_CONSENT"] = "true"
 # MEMORY_ID   format: shown in the AgentCore Memory console
 
 GATEWAY_URL = "https://customersupportgateway-94sivkvvdq.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp"   # DONE: Replace with your Gateway URL
-KB_ID       = "SGWDLYLJUT"          # TODO: Replace with your Knowledge Base ID
+KB_ID       = "AUIBPRCFNM"          # DONE Replace with your Knowledge Base ID
 REGION      = "us-east-1"        # DONE: Replace with your AWS region
 MEMORY_ID   = "CustomerSupportMemory-vcMGfU3EOL"        # DONE: Replace with your Memory ID
 
@@ -346,7 +346,7 @@ def search_knowledge_base(query: str) -> str:
     Returns:
         Relevant information retrieved from the knowledge base
     """
-    # TODO: Implement the Knowledge Base search
+    # DONE: Implement the Knowledge Base search
     if not KB_ID:
         return "Knowledge base not configured."
 
@@ -492,7 +492,7 @@ print(json.dumps(result))
 
 
 
-# ── TODO 8 — Agent Entrypoint ─────────────────────────────────────────────────
+# ── DONE 8 — Agent Entrypoint ─────────────────────────────────────────────────
 # Implement the invoke() function decorated with @app.entrypoint.
 #
 # Steps:
@@ -507,14 +507,17 @@ print(json.dumps(result))
 #   7. Return the text from the first content block of the response
 #   8. Handle exceptions gracefully
 
-SYSTEM_PROMPT = """You are WanderBot, the AI travel assistant for Horizon Travel.
+SYSTEM_PROMPT = """You are a customer support agent for Amazon e-commerce site. You have the following tools & capabilities.
 
-You have access to tools via the AgentCore Gateway:
-- get_booking(booking_ref)          : Retrieve a booking by reference (e.g. BK-1001)
-- list_bookings_by_email(email)     : List all bookings for a customer email
+1) Tool: Browser. Use this anytime the user asks you to look up something on a website
+2) Tool: search_knowledge_base. This is a RAG Knowledge base. Use this for searching the product catalog and for answering questions regarding product specifications, return policies, loyalty program details and order status definitions
+3) Tool: calculate_loyalty_discount. You MUST use this is user want to calculate Loyalty Discount.
+4) 2 Gateway tools via the Agentcore Gateway: 
+       a) Order tracker tool. Use this when customer want to track orders.
+       b) Refund processor tool. Use this when customer wants a refund.
 
-Use these tools to help customers with their bookings.
-Present results clearly and ask clarifying questions when needed."""
+Be friendly and concise. 
+"""
 
 
 @app.entrypoint
@@ -527,7 +530,7 @@ async def invoke(payload, context=None):
       customer_id (str, optional) — unique customer identifier
       session_id  (str, optional) — session identifier; generated if absent
     """
-    # TODO: Implement the agent invocation
+    # DONE: Implement the agent invocation
     try:
         user_input = payload.get("prompt")
         actor_id = payload.get("customer_id", "anonymous")
@@ -547,19 +550,19 @@ async def invoke(payload, context=None):
                                                
                 tools.extend(gateway_tools)  
                 
-                logger.warning("Gateway connected. Loaded %d gatewway tools.", len(gateway_tools))  
+                logger.warning("Gateway connected sucessfully. Loaded %d tools from gatway.", len(gateway_tools))  
                 
                 for tool in gateway_tools:
-                    logger.warning(f"TOOL Name: {tool.tool_name}")  
+                    logger.warning(f"tool name: {tool.tool_name}")  
                     
                     if hasattr(tool, 'tool_spec'):
                         logger.warning(f"tool_spec: {tool.tool_spec}")  
 
             except TimeoutError:
-                logger.exception("Gateway tool loading timed out")
+                logger.exception("Error, gateway tools timed out")
 
             except ConnectionError:
-                logger.exception("Gateway connection failed")
+                logger.exception("Error, gateway connection failed")
 
             except Exception as exc:
                 logger.exception(
@@ -589,7 +592,7 @@ async def invoke(payload, context=None):
     
 
 
-# ── CLI entry point (do not modify) ──────────────────────────────────────────
+#  CLI entry point (do not modify) 
 def main():
     """Run one invocation from the command line for local testing."""
     parser = argparse.ArgumentParser()
