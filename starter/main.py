@@ -442,10 +442,16 @@ points_earned = int(final_total * earn_rates[product_category])
 
 remaining_points = loyalty_points - points_redeemed + points_earned
 
+# revision: added tier_discount_pct
+
+tier_discount_pct = tier_rates.get(tier, 0.0)
+
+
 result = {{
     "points_redeemed": points_redeemed,
     "points_discount": round(points_discount, 2),
     "tier_discount": round(tier_discount, 2),
+    "tier_discount_pct": float(tier_discount_pct),  
     "final_total": round(final_total, 2),
     "total_savings": round(total_savings, 2),
     "points_earned": points_earned,
@@ -480,10 +486,13 @@ print(json.dumps(result))
         }
 
         tier_discount = order_total * tier_rates.get(tier, 0.0)
+        #revision: added tier_discount_pct 
+        tier_discount_pct = tier_rates.get(tier, 0.0)
         final_total = order_total - tier_discount
 
         return json.dumps({
             "tier_discount": round(tier_discount, 2),
+            "tier_discount_pct": float(tier_discount_pct),  
             "final_total": round(final_total, 2),
             "total_savings": round(tier_discount, 2),
             "fallback": True,
