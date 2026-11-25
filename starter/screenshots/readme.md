@@ -1,3 +1,5 @@
+**Revision: New Screenshot of Loyalty Discount Calculation including Tier Percentage Added.**
+
 
 **All 6 screenshots of my test cases along with their provided responses are given in this folder.**
 
